@@ -282,7 +282,7 @@ v(1em)
     [квалификация:], [#qualification],
    
     [форма обучения:], [#form_of_study],
-    [срок обучения: ], [#duration_years года],
+    [срок обучения (в годах): ], [#duration_years],
     [год набора:], [#start_year]
   )
 
