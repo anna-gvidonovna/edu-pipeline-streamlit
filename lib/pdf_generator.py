@@ -28,7 +28,7 @@ def check_typst_available() -> Tuple[bool, str]:
         return False, "Библиотека typst не установлена. Установите: pip install typst"
 
 
-def compile_typst(typ_file: Path, output_pdf: Path, working_dir: Optional[Path] = None) -> Tuple[bool, str]:
+def compile_typst(typ_file: Path, output_pdf: Path, working_dir: Optional[Path] = None, font_paths: Optional[List[Path]] = None) -> Tuple[bool, str]:
     """
     Компилирует .typ файл в PDF через typst-py.
     Работает на сервере без системного бинарника Typst.
@@ -37,6 +37,7 @@ def compile_typst(typ_file: Path, output_pdf: Path, working_dir: Optional[Path] 
         typ_file: Путь к .typ файлу
         output_pdf: Путь для сохранения PDF
         working_dir: Рабочая директория (по умолчанию - директория typ_file)
+        font_paths: Список путей к директориям со шрифтами
 
     Returns:
         (success, message)
@@ -52,7 +53,14 @@ def compile_typst(typ_file: Path, output_pdf: Path, working_dir: Optional[Path] 
             # typst.compile() принимает путь к файлу и опционально output
             # Если output не указан, возвращает bytes
             # Если output указан, записывает в файл
-            typst.compile(str(typ_file), output=str(output_pdf))
+            compile_kwargs = {
+                "output": str(output_pdf),
+            }
+
+            if font_paths:
+                compile_kwargs["font_paths"] = [str(p) for p in font_paths]
+
+            typst.compile(str(typ_file), **compile_kwargs)
 
             if output_pdf.exists():
                 return True, f"Создан: {output_pdf.name}"
@@ -117,6 +125,10 @@ def generate_all_pdfs(
     output_dir.mkdir(parents=True, exist_ok=True)
     csv_dir = templates_dir / "csv"
 
+    # Путь к шрифтам
+    fonts_dir = templates_dir / "fonts"
+    font_paths = [fonts_dir] if fonts_dir.exists() else []
+
     # Сохраняем CSV файлы
     prepare_csv_files(csvs, merged, csv_dir)
 
@@ -157,7 +169,7 @@ def generate_all_pdfs(
     typ_file = templates_dir / "1. Program.typ"
     output_pdf = output_dir / "1. Program.pdf"
     if typ_file.exists():
-        success, msg = compile_typst(typ_file, output_pdf)
+        success, msg = compile_typst(typ_file, output_pdf, font_paths=font_paths)
         if success:
             created_pdfs.append(output_pdf)
         else:
@@ -168,7 +180,7 @@ def generate_all_pdfs(
     typ_file = templates_dir / "2. Plan.typ"
     output_pdf = output_dir / "2. Plan.pdf"
     if typ_file.exists():
-        success, msg = compile_typst(typ_file, output_pdf)
+        success, msg = compile_typst(typ_file, output_pdf, font_paths=font_paths)
         if success:
             created_pdfs.append(output_pdf)
         else:
@@ -179,7 +191,7 @@ def generate_all_pdfs(
     typ_file = templates_dir / "3. Calendar.typ"
     output_pdf = output_dir / "3. Calendar.pdf"
     if typ_file.exists():
-        success, msg = compile_typst(typ_file, output_pdf)
+        success, msg = compile_typst(typ_file, output_pdf, font_paths=font_paths)
         if success:
             created_pdfs.append(output_pdf)
         else:
@@ -202,7 +214,7 @@ def generate_all_pdfs(
         temp_typ.write_text(content, encoding='utf-8')
 
         output_pdf = output_dir / f"4. {code}.pdf"
-        success, msg = compile_typst(temp_typ, output_pdf, templates_dir)
+        success, msg = compile_typst(temp_typ, output_pdf, templates_dir, font_paths=font_paths)
 
         if success:
             created_pdfs.append(output_pdf)
@@ -227,7 +239,7 @@ def generate_all_pdfs(
         temp_typ.write_text(content, encoding='utf-8')
 
         output_pdf = output_dir / f"5. {code}.pdf"
-        success, msg = compile_typst(temp_typ, output_pdf, templates_dir)
+        success, msg = compile_typst(temp_typ, output_pdf, templates_dir, font_paths=font_paths)
 
         if success:
             created_pdfs.append(output_pdf)
@@ -251,7 +263,7 @@ def generate_all_pdfs(
         temp_typ.write_text(content, encoding='utf-8')
 
         output_pdf = output_dir / "6. Finals.pdf"
-        success, msg = compile_typst(temp_typ, output_pdf, templates_dir)
+        success, msg = compile_typst(temp_typ, output_pdf, templates_dir, font_paths=font_paths)
 
         if success:
             created_pdfs.append(output_pdf)
@@ -278,7 +290,7 @@ def generate_all_pdfs(
         temp_typ.write_text(content, encoding='utf-8')
 
         output_pdf = output_dir / f"7. {code}.pdf"
-        success, msg = compile_typst(temp_typ, output_pdf, templates_dir)
+        success, msg = compile_typst(temp_typ, output_pdf, templates_dir, font_paths=font_paths)
 
         if success:
             created_pdfs.append(output_pdf)
@@ -292,7 +304,7 @@ def generate_all_pdfs(
     typ_file = templates_dir / "8a. Upbringing.typ"
     output_pdf = output_dir / "8a. Upbringing.pdf"
     if typ_file.exists():
-        success, msg = compile_typst(typ_file, output_pdf)
+        success, msg = compile_typst(typ_file, output_pdf, font_paths=font_paths)
         if success:
             created_pdfs.append(output_pdf)
         else:
@@ -303,7 +315,7 @@ def generate_all_pdfs(
     typ_file = templates_dir / "8b. Cal_upbringing.typ"
     output_pdf = output_dir / "8b. Cal_upbringing.pdf"
     if typ_file.exists():
-        success, msg = compile_typst(typ_file, output_pdf)
+        success, msg = compile_typst(typ_file, output_pdf, font_paths=font_paths)
         if success:
             created_pdfs.append(output_pdf)
         else:
