@@ -297,11 +297,11 @@ if st.session_state.merged is not None:
     )
 
 # =============================================================================
-# Шаг 5: Генерация PDF (локально)
+# Шаг 5: Генерация PDF
 # =============================================================================
 if st.session_state.merged is not None:
     st.divider()
-    st.header("Шаг 5: Генерация PDF (только локально)")
+    st.header("Шаг 5: Генерация PDF")
 
     # Проверяем доступность Typst
     typst_available, typst_msg = check_typst_available()
@@ -314,19 +314,17 @@ if st.session_state.merged is not None:
         ```bash
         pip install typst
         ```
-
-        PDF генерация работает только при локальном запуске приложения.
         """)
     else:
         st.success("✅ Typst доступен!")
 
-        # Путь к шаблонам
-        default_templates = Path("/Users/mtvbsl/Library/CloudStorage/Dropbox/UU/Code/Typst/UU EduDocs")
+        # Путь к шаблонам (встроены в проект)
+        default_templates = Path(__file__).parent / "typst_templates"
 
         templates_path = st.text_input(
-            "Путь к директории с Typst шаблонами (UU EduDocs)",
+            "Путь к директории с Typst шаблонами",
             value=str(default_templates) if default_templates.exists() else "",
-            help="Директория должна содержать шаблоны: 1. Program.typ, templates/4. module.typ и т.д."
+            help="По умолчанию используются встроенные шаблоны. Можно указать свой путь."
         )
 
         if templates_path and Path(templates_path).exists():
@@ -440,7 +438,5 @@ st.markdown("""
 2. Проверьте извлечённые данные
 3. (Опционально) Загрузите Excel с дополнительной информацией
 4. Скачайте CSV файлы
-5. (Локально) Генерируйте PDF через Typst
-
-**Примечание:** Генерация PDF работает только при локальном запуске с установленным Typst.
+5. Генерируйте PDF через Typst
 """)

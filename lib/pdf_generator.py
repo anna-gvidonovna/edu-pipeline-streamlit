@@ -30,7 +30,8 @@ def check_typst_available() -> Tuple[bool, str]:
 
 def compile_typst(typ_file: Path, output_pdf: Path, working_dir: Optional[Path] = None) -> Tuple[bool, str]:
     """
-    Компилирует .typ файл в PDF.
+    Компилирует .typ файл в PDF через typst-py.
+    Работает на сервере без системного бинарника Typst.
 
     Args:
         typ_file: Путь к .typ файлу
@@ -48,9 +49,15 @@ def compile_typst(typ_file: Path, output_pdf: Path, working_dir: Optional[Path] 
         os.chdir(work_dir)
 
         try:
-            pdf_bytes = typst.compile(typ_file)
-            output_pdf.write_bytes(pdf_bytes)
-            return True, f"Создан: {output_pdf.name}"
+            # typst.compile() принимает путь к файлу и опционально output
+            # Если output не указан, возвращает bytes
+            # Если output указан, записывает в файл
+            typst.compile(str(typ_file), output=str(output_pdf))
+
+            if output_pdf.exists():
+                return True, f"Создан: {output_pdf.name}"
+            else:
+                return False, f"PDF не создан: {output_pdf.name}"
         finally:
             os.chdir(original_cwd)
 
