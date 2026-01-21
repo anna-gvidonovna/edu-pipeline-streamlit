@@ -19,10 +19,10 @@ import shutil
 
 # Конфигурация страницы
 st.set_page_config(
-    page_title="Генератор РПД",
+    page_title="Комплект ОП",
     page_icon="🎓",
-    layout="wide",
-    initial_sidebar_state="collapsed"
+    layout="centered",
+    initial_sidebar_state="auto"
 )
 
 # =============================================================================
@@ -32,7 +32,7 @@ def check_password():
     """Проверка пароля для доступа к приложению."""
 
     # Пароль из переменной окружения (для Streamlit Cloud) или дефолтный
-    correct_password = os.environ.get("APP_PASSWORD", "rpd2024")
+    correct_password = os.environ.get("APP_PASSWORD", "0000")
 
     if "authenticated" not in st.session_state:
         st.session_state.authenticated = False
@@ -40,8 +40,8 @@ def check_password():
     if st.session_state.authenticated:
         return True
 
-    st.title("🔐 Доступ ограничен")
-    st.markdown("Введите пароль для доступа к приложению")
+    st.title("🔐 Женщина-апостол не пускает!")
+    st.markdown("Введите пароль для доступа")
 
     password = st.text_input("Пароль", type="password")
 
@@ -50,7 +50,7 @@ def check_password():
             st.session_state.authenticated = True
             st.rerun()
         else:
-            st.error("Неверный пароль")
+            st.error("Я тебя не боюсь, тварь!")
 
     return False
 
@@ -74,7 +74,7 @@ if 'merged' not in st.session_state:
 # Шаг 1: Загрузка PLX
 # =============================================================================
 st.header("Шаг 1: Загрузите PLX файл")
-st.markdown("PLX — это XML-файл учебного плана из системы 1С или аналогичной системы управления вузом.")
+st.markdown("PLX — это XML-файл учебного плана из системы Учебные Планы")
 
 plx_file = st.file_uploader(
     "Выберите PLX файл учебного плана",
@@ -89,7 +89,7 @@ if plx_file is not None:
 
         if program_data:
             st.session_state.program_data = program_data
-            st.success(f"✅ Файл загружен успешно!")
+            st.success(f"✅ Ура, победа!")
 
             # Показываем информацию о программе
             col1, col2 = st.columns(2)
