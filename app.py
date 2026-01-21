@@ -7,6 +7,7 @@ import streamlit as st
 import pandas as pd
 from io import BytesIO
 import zipfile
+import os
 
 from lib.plx_parser import parse_plx
 from lib.json_to_csv import convert_to_csvs
@@ -23,6 +24,39 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="collapsed"
 )
+
+# =============================================================================
+# Аутентификация
+# =============================================================================
+def check_password():
+    """Проверка пароля для доступа к приложению."""
+
+    # Пароль из переменной окружения (для Streamlit Cloud) или дефолтный
+    correct_password = os.environ.get("APP_PASSWORD", "rpd2024")
+
+    if "authenticated" not in st.session_state:
+        st.session_state.authenticated = False
+
+    if st.session_state.authenticated:
+        return True
+
+    st.title("🔐 Доступ ограничен")
+    st.markdown("Введите пароль для доступа к приложению")
+
+    password = st.text_input("Пароль", type="password")
+
+    if st.button("Войти", type="primary"):
+        if password == correct_password:
+            st.session_state.authenticated = True
+            st.rerun()
+        else:
+            st.error("Неверный пароль")
+
+    return False
+
+# Проверяем аутентификацию
+if not check_password():
+    st.stop()
 
 # Заголовок
 st.title("🎓 Генератор документов образовательной программы")
