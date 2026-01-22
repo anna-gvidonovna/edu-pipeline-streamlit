@@ -12,6 +12,8 @@
 
 #let edu_protocol_number = title_csv.at(title_n).at("edu_protocol_number")
 #let edu_protocol_date = title_csv.at(title_n).at("edu_protocol_date")
+#let is_new_edition = false // показывать "(новая редакция)" в документах
+#let new_edition_text = if is_new_edition { " (новая редакция)" } else { "" }
 #let qualification = title_csv.at(title_n).at("qualification")
 #let level = if qualification == "магистр" [высшее образование — магистратура] else [высшее образование — бакалавриат]
 #let start_year = title_csv.at(title_n).at("start_year")
