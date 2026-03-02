@@ -840,11 +840,18 @@
   - Коммерсантъ (https://www.kommersant.ru)
 ]
 
+#let author_raw = title_csv.at(title_n).at("author_compilers", default: "")
+#let author_items = author_raw.split(";").map(item => str(item).trim()).filter(item => item != "")
+#let default_author_items = ("дизайнер образовательных программ Департамента академического качества – М. А. Бислер",)
+#let author_lines = if author_items.len() > 0 { author_items } else { default_author_items }
+
 #let author = {
 
 align(top +  left)[
-     *Составители рабочей программы:* \
-     дизайнер образовательных программ Департамента академического качества – М. А. Бислер 
+     *Составитель(-и):* \
+     #for item in author_lines [
+       #item \
+     ]
    ]
 pagebreak()
 }

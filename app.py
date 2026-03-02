@@ -410,6 +410,16 @@ if st.session_state.merged is not None:
                     value="",
                     help="Пример: https://example.com; https://docs.example.org; Портал вуза https://university.example"
                 )
+                author_compilers = st.text_area(
+                    "Составитель(-и) (через ';')",
+                    value="",
+                    help="Пример: Иванов И.И., доцент кафедры ...; Петрова А.А., старший преподаватель ..."
+                )
+                vkr_topics = st.text_area(
+                    "Примерная тематика ВКР (через ';')",
+                    value="",
+                    help="Пример: Тема 1; Тема 2; Тема 3"
+                )
 
                 if st.button("🚀 Генерировать PDF", type="primary"):
                     # Создаём временную директорию для PDF
@@ -431,6 +441,8 @@ if st.session_state.merged is not None:
                             if "title" in pdf_csvs and not pdf_csvs["title"].empty:
                                 title_df = pdf_csvs["title"].copy()
                                 title_df["internet_resources"] = internet_sites.strip()
+                                title_df["author_compilers"] = author_compilers.strip()
+                                title_df["vkr_topics"] = vkr_topics.strip()
                                 pdf_csvs["title"] = title_df
 
                             created_pdfs, errors = generate_all_pdfs(
