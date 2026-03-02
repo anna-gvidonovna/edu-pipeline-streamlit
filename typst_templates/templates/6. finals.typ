@@ -6,8 +6,10 @@
    var01: [],
   var_cycle : [],//
   is_accredited: false, // аккредитована ли программа (влияет на название ГИА/ИА)
+  is_new_edition: false,
   doc
   )  = {
+  let new_edition_text = if is_new_edition { " (новая редакция)" } else { "" }
 
   // Определяем названия в зависимости от аккредитации
   let gia_full = if is_accredited { "государственной итоговой аттестации" } else { "итоговой аттестации" }

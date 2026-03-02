@@ -4,8 +4,10 @@
 #let program(
   // общая информация
   var01: [], // 
+  is_new_edition: false,
   doc
   ) = {
+    let new_edition_text = if is_new_edition { " (новая редакция)" } else { "" }
 
     set page(
   paper: "a4",

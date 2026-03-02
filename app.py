@@ -397,6 +397,15 @@ if st.session_state.merged is not None:
                     **Всего: ~{total_pdfs} PDF файлов**
                     """)
 
+                is_accredited = st.checkbox(
+                    "Программа аккредитована (ГИА/ГЭК)",
+                    value=False
+                )
+                is_new_edition = st.checkbox(
+                    "Новая редакция (добавлять '(новая редакция)' в шапке)",
+                    value=False
+                )
+
                 if st.button("🚀 Генерировать PDF", type="primary"):
                     # Создаём временную директорию для PDF
                     with tempfile.TemporaryDirectory() as temp_dir:
@@ -418,7 +427,9 @@ if st.session_state.merged is not None:
                                 st.session_state.merged,
                                 templates_dir,
                                 output_dir,
-                                progress_callback=update_progress
+                                progress_callback=update_progress,
+                                is_accredited=is_accredited,
+                                is_new_edition=is_new_edition
                             )
 
                         progress_bar.progress(1.0)

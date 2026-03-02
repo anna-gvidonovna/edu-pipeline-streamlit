@@ -6,8 +6,10 @@
   // общая информация
   var01: [],
   var_cycle : [],// 
+  is_new_edition: false,
   doc
   ) = {  
+  let new_edition_text = if is_new_edition { " (новая редакция)" } else { "" }
 
   let row = module_desc.at(var_cycle)
   let discipline_code = row.at("discipline_code", default: "")

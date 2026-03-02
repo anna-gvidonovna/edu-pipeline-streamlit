@@ -2,5 +2,6 @@
 
 #show: assessment.with(
   var01: [],
-  var_cycle : 12
+  var_cycle : 12,
+  is_new_edition: false
 )

@@ -94,12 +94,60 @@ def prepare_csv_files(csvs: Dict[str, pd.DataFrame], merged: Dict[str, pd.DataFr
         df.to_csv(csv_dir / f"{name}.csv", index=False, encoding='utf-8')
 
 
+def _to_typst_bool(value: bool) -> str:
+    """Преобразует Python bool в литерал Typst."""
+    return "true" if value else "false"
+
+
+def _compile_wrapper_typst(
+    templates_dir: Path,
+    output_pdf: Path,
+    import_path: str,
+    show_name: str,
+    with_args: List[str],
+    temp_name: str,
+    font_paths: Optional[List[Path]] = None,
+) -> Tuple[bool, str]:
+    """
+    Создаёт временный Typst-обёрточный файл, компилирует его и удаляет.
+
+    Args:
+        templates_dir: Корневая директория шаблонов
+        output_pdf: Путь выходного PDF
+        import_path: Путь импорта шаблона внутри Typst
+        show_name: Имя функции шаблона для `#show: ...with(...)`
+        with_args: Аргументы внутри `with(...)` (по одному на строку)
+        temp_name: Имя временного файла .typ
+        font_paths: Список директорий со шрифтами
+    """
+    template_path = templates_dir / import_path
+    if not template_path.exists():
+        return False, f"Шаблон не найден: {import_path}"
+
+    temp_typ = templates_dir / temp_name
+    args_block = ",\n".join(f"  {arg}" for arg in with_args)
+    content = (
+        f'#import "{import_path}": *\n'
+        f"#show: {show_name}.with(\n"
+        f"{args_block}\n"
+        f")\n"
+    )
+
+    temp_typ.write_text(content, encoding="utf-8")
+    try:
+        return compile_typst(temp_typ, output_pdf, templates_dir, font_paths=font_paths)
+    finally:
+        temp_typ.unlink(missing_ok=True)
+
+
 def generate_all_pdfs(
     csvs: Dict[str, pd.DataFrame],
     merged: Dict[str, pd.DataFrame],
     templates_dir: Path,
     output_dir: Path,
-    progress_callback: Optional[Callable[[int, int, str], None]] = None
+    progress_callback: Optional[Callable[[int, int, str], None]] = None,
+    is_accredited: bool = False,
+    is_new_edition: bool = False,
 ) -> Tuple[List[Path], List[str]]:
     """
     Генерирует все PDF документы.
@@ -110,6 +158,8 @@ def generate_all_pdfs(
         templates_dir: Директория с Typst шаблонами (UU EduDocs)
         output_dir: Директория для PDF
         progress_callback: Функция для отчёта о прогрессе (current, total, message)
+        is_accredited: Аккредитована ли программа (влияет на Finals)
+        is_new_edition: Добавлять ли "(новая редакция)" в шапках документов
 
     Returns:
         (list_of_created_pdfs, list_of_errors)
@@ -165,37 +215,67 @@ def generate_all_pdfs(
         if progress_callback:
             progress_callback(current, total_pdfs, message)
 
+    typst_is_accredited = _to_typst_bool(is_accredited)
+    typst_is_new_edition = _to_typst_bool(is_new_edition)
+
     # 1. Program.pdf
-    typ_file = templates_dir / "1. Program.typ"
     output_pdf = output_dir / "1. Program.pdf"
-    if typ_file.exists():
-        success, msg = compile_typst(typ_file, output_pdf, font_paths=font_paths)
-        if success:
-            created_pdfs.append(output_pdf)
-        else:
-            errors.append(f"1. Program: {msg}")
+    success, msg = _compile_wrapper_typst(
+        templates_dir=templates_dir,
+        output_pdf=output_pdf,
+        import_path="templates/1. program.typ",
+        show_name="program",
+        with_args=[
+            "var01: []",
+            f"is_new_edition: {typst_is_new_edition}",
+        ],
+        temp_name="temp_program.typ",
+        font_paths=font_paths,
+    )
+    if success:
+        created_pdfs.append(output_pdf)
+    else:
+        errors.append(f"1. Program: {msg}")
     report_progress("1. Program.pdf")
 
     # 2. Plan.pdf
-    typ_file = templates_dir / "2. Plan.typ"
     output_pdf = output_dir / "2. Plan.pdf"
-    if typ_file.exists():
-        success, msg = compile_typst(typ_file, output_pdf, font_paths=font_paths)
-        if success:
-            created_pdfs.append(output_pdf)
-        else:
-            errors.append(f"2. Plan: {msg}")
+    success, msg = _compile_wrapper_typst(
+        templates_dir=templates_dir,
+        output_pdf=output_pdf,
+        import_path="templates/2. plan.typ",
+        show_name="plan",
+        with_args=[
+            "var01: []",
+            f"is_new_edition: {typst_is_new_edition}",
+        ],
+        temp_name="temp_plan.typ",
+        font_paths=font_paths,
+    )
+    if success:
+        created_pdfs.append(output_pdf)
+    else:
+        errors.append(f"2. Plan: {msg}")
     report_progress("2. Plan.pdf")
 
     # 3. Calendar.pdf
-    typ_file = templates_dir / "3. Calendar.typ"
     output_pdf = output_dir / "3. Calendar.pdf"
-    if typ_file.exists():
-        success, msg = compile_typst(typ_file, output_pdf, font_paths=font_paths)
-        if success:
-            created_pdfs.append(output_pdf)
-        else:
-            errors.append(f"3. Calendar: {msg}")
+    success, msg = _compile_wrapper_typst(
+        templates_dir=templates_dir,
+        output_pdf=output_pdf,
+        import_path="templates/3. calendar.typ",
+        show_name="calendar",
+        with_args=[
+            "var01: []",
+            f"is_new_edition: {typst_is_new_edition}",
+        ],
+        temp_name="temp_calendar.typ",
+        font_paths=font_paths,
+    )
+    if success:
+        created_pdfs.append(output_pdf)
+    else:
+        errors.append(f"3. Calendar: {msg}")
     report_progress("3. Calendar.pdf")
 
     # 4. Module.pdf - для каждой дисциплины
@@ -203,25 +283,26 @@ def generate_all_pdfs(
         code = row['discipline_code']
         var_cycle = row['index']
 
-        # Создаём временный .typ файл
-        temp_typ = templates_dir / f"temp_module_{var_cycle}.typ"
-        content = f'''#import "templates/4. module.typ": *
-#show: module.with(
-  var01: [],
-  var_cycle : {var_cycle}
-)
-'''
-        temp_typ.write_text(content, encoding='utf-8')
-
         output_pdf = output_dir / f"4. {code}.pdf"
-        success, msg = compile_typst(temp_typ, output_pdf, templates_dir, font_paths=font_paths)
+        success, msg = _compile_wrapper_typst(
+            templates_dir=templates_dir,
+            output_pdf=output_pdf,
+            import_path="templates/4. module.typ",
+            show_name="module",
+            with_args=[
+                "var01: []",
+                f"var_cycle : {var_cycle}",
+                f"is_new_edition: {typst_is_new_edition}",
+            ],
+            temp_name=f"temp_module_{var_cycle}.typ",
+            font_paths=font_paths,
+        )
 
         if success:
             created_pdfs.append(output_pdf)
         else:
             errors.append(f"4. {code}: {msg}")
 
-        temp_typ.unlink(missing_ok=True)
         report_progress(f"4. {code}.pdf")
 
     # 5. Practice.pdf - для каждой практики
@@ -229,48 +310,53 @@ def generate_all_pdfs(
         code = row['discipline_code']
         var_cycle = row['index']
 
-        temp_typ = templates_dir / f"temp_practice_{var_cycle}.typ"
-        content = f'''#import "templates/5. practice.typ": *
-#show: practice.with(
-  var01: [],
-  var_cycle : {var_cycle}
-)
-'''
-        temp_typ.write_text(content, encoding='utf-8')
-
         output_pdf = output_dir / f"5. {code}.pdf"
-        success, msg = compile_typst(temp_typ, output_pdf, templates_dir, font_paths=font_paths)
+        success, msg = _compile_wrapper_typst(
+            templates_dir=templates_dir,
+            output_pdf=output_pdf,
+            import_path="templates/5. practice.typ",
+            show_name="practice",
+            with_args=[
+                "var01: []",
+                f"var_cycle : {var_cycle}",
+                f"is_new_edition: {typst_is_new_edition}",
+            ],
+            temp_name=f"temp_practice_{var_cycle}.typ",
+            font_paths=font_paths,
+        )
 
         if success:
             created_pdfs.append(output_pdf)
         else:
             errors.append(f"5. {code}: {msg}")
 
-        temp_typ.unlink(missing_ok=True)
         report_progress(f"5. {code}.pdf")
 
     # 6. Finals.pdf
     if len(finals) > 0:
         var_cycle = finals.iloc[0]['index']
 
-        temp_typ = templates_dir / f"temp_finals_{var_cycle}.typ"
-        content = f'''#import "templates/6. finals.typ": *
-#show: finals.with(
-  var01: [],
-  var_cycle : {var_cycle}
-)
-'''
-        temp_typ.write_text(content, encoding='utf-8')
-
         output_pdf = output_dir / "6. Finals.pdf"
-        success, msg = compile_typst(temp_typ, output_pdf, templates_dir, font_paths=font_paths)
+        success, msg = _compile_wrapper_typst(
+            templates_dir=templates_dir,
+            output_pdf=output_pdf,
+            import_path="templates/6. finals.typ",
+            show_name="finals",
+            with_args=[
+                "var01: []",
+                f"var_cycle : {var_cycle}",
+                f"is_accredited: {typst_is_accredited}",
+                f"is_new_edition: {typst_is_new_edition}",
+            ],
+            temp_name=f"temp_finals_{var_cycle}.typ",
+            font_paths=font_paths,
+        )
 
         if success:
             created_pdfs.append(output_pdf)
         else:
             errors.append(f"6. Finals: {msg}")
 
-        temp_typ.unlink(missing_ok=True)
         report_progress("6. Finals.pdf")
 
     # 7. Assessment.pdf - для дисциплин и практик
@@ -280,46 +366,66 @@ def generate_all_pdfs(
         code = row['discipline_code']
         var_cycle = row['index']
 
-        temp_typ = templates_dir / f"temp_assessment_{var_cycle}.typ"
-        content = f'''#import "templates/7. assessment.typ": *
-#show: assessment.with(
-  var01: [],
-  var_cycle : {var_cycle}
-)
-'''
-        temp_typ.write_text(content, encoding='utf-8')
-
         output_pdf = output_dir / f"7. {code}.pdf"
-        success, msg = compile_typst(temp_typ, output_pdf, templates_dir, font_paths=font_paths)
+        success, msg = _compile_wrapper_typst(
+            templates_dir=templates_dir,
+            output_pdf=output_pdf,
+            import_path="templates/7. assessment.typ",
+            show_name="assessment",
+            with_args=[
+                "var01: []",
+                f"var_cycle : {var_cycle}",
+                f"is_new_edition: {typst_is_new_edition}",
+            ],
+            temp_name=f"temp_assessment_{var_cycle}.typ",
+            font_paths=font_paths,
+        )
 
         if success:
             created_pdfs.append(output_pdf)
         else:
             errors.append(f"7. {code}: {msg}")
 
-        temp_typ.unlink(missing_ok=True)
         report_progress(f"7. {code}.pdf")
 
     # 8a. Upbringing.pdf
-    typ_file = templates_dir / "8a. Upbringing.typ"
     output_pdf = output_dir / "8a. Upbringing.pdf"
-    if typ_file.exists():
-        success, msg = compile_typst(typ_file, output_pdf, font_paths=font_paths)
-        if success:
-            created_pdfs.append(output_pdf)
-        else:
-            errors.append(f"8a. Upbringing: {msg}")
+    success, msg = _compile_wrapper_typst(
+        templates_dir=templates_dir,
+        output_pdf=output_pdf,
+        import_path="templates/8a. upbringing.typ",
+        show_name="upbringing",
+        with_args=[
+            "var01: []",
+            f"is_new_edition: {typst_is_new_edition}",
+        ],
+        temp_name="temp_upbringing.typ",
+        font_paths=font_paths,
+    )
+    if success:
+        created_pdfs.append(output_pdf)
+    else:
+        errors.append(f"8a. Upbringing: {msg}")
     report_progress("8a. Upbringing.pdf")
 
     # 8b. Cal_upbringing.pdf
-    typ_file = templates_dir / "8b. Cal_upbringing.typ"
     output_pdf = output_dir / "8b. Cal_upbringing.pdf"
-    if typ_file.exists():
-        success, msg = compile_typst(typ_file, output_pdf, font_paths=font_paths)
-        if success:
-            created_pdfs.append(output_pdf)
-        else:
-            errors.append(f"8b. Cal_upbringing: {msg}")
+    success, msg = _compile_wrapper_typst(
+        templates_dir=templates_dir,
+        output_pdf=output_pdf,
+        import_path="templates/8b. cal_upbringing.typ",
+        show_name="cal_upbringing",
+        with_args=[
+            "var01: []",
+            f"is_new_edition: {typst_is_new_edition}",
+        ],
+        temp_name="temp_cal_upbringing.typ",
+        font_paths=font_paths,
+    )
+    if success:
+        created_pdfs.append(output_pdf)
+    else:
+        errors.append(f"8b. Cal_upbringing: {msg}")
     report_progress("8b. Cal_upbringing.pdf")
 
     return created_pdfs, errors
