@@ -827,12 +827,22 @@
 #let logo = image("../pics/logo.svg", height: auto) 
 #let gray = rgb(192,192,192)
 
-#let internet = {
- [- Архи.ру веб-сайт об архитектуре https://archi.ru/ 
-- ArchDaily блог об архитектуре https://www.archdaily.com/
-- Союз московских архитекторов https://moscowarch.ru/
-- Союз архитекторов России  https://uar.ru/]
-}
+#let internet_raw = title_csv.at(title_n).at("internet_resources", default: "")
+#let internet_items = internet_raw
+  .split(";")
+  .map(item => str(item).trim())
+  .filter(item => item != "")
+
+#let internet = if internet_items.len() > 0 [
+  #for item in internet_items [
+    - #item
+  ]
+] else [
+  - Архи.ру веб-сайт об архитектуре https://archi.ru/
+  - ArchDaily блог об архитектуре https://www.archdaily.com/
+  - Союз московских архитекторов https://moscowarch.ru/
+  - Союз архитекторов России https://uar.ru/
+]
 
 #let author = {
 

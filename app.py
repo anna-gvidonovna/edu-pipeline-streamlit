@@ -405,6 +405,11 @@ if st.session_state.merged is not None:
                     "Новая редакция (добавлять '(новая редакция)' в шапке)",
                     value=False
                 )
+                internet_sites = st.text_area(
+                    "Ресурсы Интернет (через ';')",
+                    value="",
+                    help="Пример: https://example.com; https://docs.example.org; Портал вуза https://university.example"
+                )
 
                 if st.button("🚀 Генерировать PDF", type="primary"):
                     # Создаём временную директорию для PDF
@@ -422,8 +427,14 @@ if st.session_state.merged is not None:
 
                         # Генерация
                         with st.spinner("Генерация PDF..."):
+                            pdf_csvs = {name: df.copy() for name, df in st.session_state.csvs.items()}
+                            if "title" in pdf_csvs and not pdf_csvs["title"].empty:
+                                title_df = pdf_csvs["title"].copy()
+                                title_df["internet_resources"] = internet_sites.strip()
+                                pdf_csvs["title"] = title_df
+
                             created_pdfs, errors = generate_all_pdfs(
-                                st.session_state.csvs,
+                                pdf_csvs,
                                 st.session_state.merged,
                                 templates_dir,
                                 output_dir,
