@@ -44,7 +44,6 @@
   row-gutter: (2pt, auto),
   [#align(center)[#text(size: 9pt)[категория]]],
   [#align(center)[#text(size: 9pt)[доступ]]],
-  [«Лань»], [https://e.lanbook.com/ ],
   [«Юрайт»], [https://urait.ru/],
   [«Университетская библиотека ONLINE»], [http://biblioclub.ru/],
   )
