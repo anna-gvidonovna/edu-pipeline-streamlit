@@ -7,6 +7,7 @@
   var_cycle : [],//
   is_accredited: false, // аккредитована ли программа (влияет на название ГИА/ИА)
   is_new_edition: false,
+  doc_year: 2026,
   doc
   )  = {
   let new_edition_text = if is_new_edition { " (новая редакция)" } else { "" }
@@ -320,7 +321,7 @@ v(1em)
   )
 
   align(bottom + center)[
-    Москва, 2025
+    Москва, #doc_year
   ]
 
   pagebreak()

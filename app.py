@@ -420,6 +420,13 @@ if st.session_state.merged is not None:
                     value="",
                     help="Пример: Тема 1; Тема 2; Тема 3"
                 )
+                doc_year = st.number_input(
+                    "Год документа (Москва, ...)",
+                    min_value=2020,
+                    max_value=2035,
+                    value=2026,
+                    help="Год, указываемый на титульных страницах: «Москва, 2026»"
+                )
 
                 if st.button("🚀 Генерировать PDF", type="primary"):
                     # Создаём временную директорию для PDF
@@ -452,7 +459,8 @@ if st.session_state.merged is not None:
                                 output_dir,
                                 progress_callback=update_progress,
                                 is_accredited=is_accredited,
-                                is_new_edition=is_new_edition
+                                is_new_edition=is_new_edition,
+                                doc_year=int(doc_year),
                             )
 
                         progress_bar.progress(1.0)

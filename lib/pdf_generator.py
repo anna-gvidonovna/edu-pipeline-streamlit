@@ -148,6 +148,7 @@ def generate_all_pdfs(
     progress_callback: Optional[Callable[[int, int, str], None]] = None,
     is_accredited: bool = False,
     is_new_edition: bool = False,
+    doc_year: int = 2026,
 ) -> Tuple[List[Path], List[str]]:
     """
     Генерирует все PDF документы.
@@ -217,6 +218,7 @@ def generate_all_pdfs(
 
     typst_is_accredited = _to_typst_bool(is_accredited)
     typst_is_new_edition = _to_typst_bool(is_new_edition)
+    typst_doc_year = str(doc_year)
 
     # 1. Program.pdf
     output_pdf = output_dir / "1. Program.pdf"
@@ -228,6 +230,7 @@ def generate_all_pdfs(
         with_args=[
             "var01: []",
             f"is_new_edition: {typst_is_new_edition}",
+            f"doc_year: {typst_doc_year}",
         ],
         temp_name="temp_program.typ",
         font_paths=font_paths,
@@ -248,6 +251,7 @@ def generate_all_pdfs(
         with_args=[
             "var01: []",
             f"is_new_edition: {typst_is_new_edition}",
+            f"doc_year: {typst_doc_year}",
         ],
         temp_name="temp_plan.typ",
         font_paths=font_paths,
@@ -268,6 +272,7 @@ def generate_all_pdfs(
         with_args=[
             "var01: []",
             f"is_new_edition: {typst_is_new_edition}",
+            f"doc_year: {typst_doc_year}",
         ],
         temp_name="temp_calendar.typ",
         font_paths=font_paths,
@@ -293,6 +298,7 @@ def generate_all_pdfs(
                 "var01: []",
                 f"var_cycle : {var_cycle}",
                 f"is_new_edition: {typst_is_new_edition}",
+                f"doc_year: {typst_doc_year}",
             ],
             temp_name=f"temp_module_{var_cycle}.typ",
             font_paths=font_paths,
@@ -320,6 +326,7 @@ def generate_all_pdfs(
                 "var01: []",
                 f"var_cycle : {var_cycle}",
                 f"is_new_edition: {typst_is_new_edition}",
+                f"doc_year: {typst_doc_year}",
             ],
             temp_name=f"temp_practice_{var_cycle}.typ",
             font_paths=font_paths,
@@ -347,6 +354,7 @@ def generate_all_pdfs(
                 f"var_cycle : {var_cycle}",
                 f"is_accredited: {typst_is_accredited}",
                 f"is_new_edition: {typst_is_new_edition}",
+                f"doc_year: {typst_doc_year}",
             ],
             temp_name=f"temp_finals_{var_cycle}.typ",
             font_paths=font_paths,
@@ -376,6 +384,7 @@ def generate_all_pdfs(
                 "var01: []",
                 f"var_cycle : {var_cycle}",
                 f"is_new_edition: {typst_is_new_edition}",
+                f"doc_year: {typst_doc_year}",
             ],
             temp_name=f"temp_assessment_{var_cycle}.typ",
             font_paths=font_paths,
@@ -398,6 +407,7 @@ def generate_all_pdfs(
         with_args=[
             "var01: []",
             f"is_new_edition: {typst_is_new_edition}",
+            f"doc_year: {typst_doc_year}",
         ],
         temp_name="temp_upbringing.typ",
         font_paths=font_paths,
@@ -418,6 +428,7 @@ def generate_all_pdfs(
         with_args=[
             "var01: []",
             f"is_new_edition: {typst_is_new_edition}",
+            f"doc_year: {typst_doc_year}",
         ],
         temp_name="temp_cal_upbringing.typ",
         font_paths=font_paths,
