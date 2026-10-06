@@ -99,6 +99,47 @@ def _to_typst_bool(value: bool) -> str:
     return "true" if value else "false"
 
 
+# Подписи типов документов в именах файлов: {prefix: (en, ru)}
+DOC_LABELS = {
+    "1": ("Program", "ОПОП"),
+    "2": ("Plan", "Учебный план"),
+    "3": ("Calendar", "КУГ"),
+    "4": ("Module", "РПД"),
+    "5": ("Practice", "РПП"),
+    "6": ("Finals", "ГИА"),
+    "7": ("Assessment", "ФОС"),
+    "8a": ("Upbringing", "РПВ"),
+    "8b": ("Cal_upbringing", "КПВР"),
+}
+
+_FORBIDDEN_FILENAME_CHARS = '<>:"/\\|?*\n\r\t'
+
+
+def _safe_filename(text: str, max_len: int = 120) -> str:
+    """Убирает недопустимые для имени файла символы и обрезает длину."""
+    cleaned = "".join("_" if c in _FORBIDDEN_FILENAME_CHARS else c for c in str(text))
+    cleaned = " ".join(cleaned.split()).strip(" .")
+    return cleaned[:max_len].rstrip(" .")
+
+
+def _doc_filename(prefix: str, lang: str, item: Optional[str] = None, with_number: bool = True) -> str:
+    """
+    Формирует имя PDF: "[<prefix>. ]<Тип>[ <item>].pdf".
+
+    Args:
+        prefix: Номер документа ("1", "4", "8a", ...)
+        lang: "en" или "ru" — язык подписи типа документа
+        item: Индекс или название дисциплины (для РПД/РПП/ФОС)
+        with_number: Добавлять ли номер документа в начало имени
+    """
+    en, ru = DOC_LABELS[prefix]
+    label = ru if lang == "ru" else en
+    name = f"{prefix}. {label}" if with_number else label
+    if item:
+        name += f" {item}"
+    return f"{name}.pdf"
+
+
 def _compile_wrapper_typst(
     templates_dir: Path,
     output_pdf: Path,
@@ -149,6 +190,9 @@ def generate_all_pdfs(
     is_accredited: bool = False,
     is_new_edition: bool = False,
     doc_year: int = 2026,
+    name_by: str = "code",
+    filename_lang: str = "en",
+    with_number: bool = True,
 ) -> Tuple[List[Path], List[str]]:
     """
     Генерирует все PDF документы.
@@ -161,6 +205,9 @@ def generate_all_pdfs(
         progress_callback: Функция для отчёта о прогрессе (current, total, message)
         is_accredited: Аккредитована ли программа (влияет на Finals)
         is_new_edition: Добавлять ли "(новая редакция)" в шапках документов
+        name_by: Как называть РПД/РПП/ФОС: "code" (по индексу) или "name" (по названию дисциплины)
+        filename_lang: Язык подписей типов документов в именах файлов: "en" или "ru"
+        with_number: Добавлять ли номер документа ("1. ", "4. ", ...) в начало имени файла
 
     Returns:
         (list_of_created_pdfs, list_of_errors)
@@ -220,8 +267,24 @@ def generate_all_pdfs(
     typst_is_new_edition = _to_typst_bool(is_new_edition)
     typst_doc_year = str(doc_year)
 
+    used_names: set = set()
+
+    def doc_filename(prefix: str, lang: str, item: Optional[str] = None) -> str:
+        return _doc_filename(prefix, lang, item, with_number=with_number)
+
+    def item_filename(prefix: str, row) -> str:
+        """Имя файла для дисциплины/практики с учётом name_by и без коллизий."""
+        code = str(row['discipline_code'])
+        raw_title = row.get('discipline', '')
+        title = _safe_filename(raw_title) if name_by == "name" and pd.notna(raw_title) else ""
+        filename = doc_filename(prefix, filename_lang, title or _safe_filename(code))
+        if filename in used_names:
+            filename = doc_filename(prefix, filename_lang, f"{title} ({_safe_filename(code)})")
+        used_names.add(filename)
+        return filename
+
     # 1. Program.pdf
-    output_pdf = output_dir / "1. Program.pdf"
+    output_pdf = output_dir / doc_filename("1", filename_lang)
     success, msg = _compile_wrapper_typst(
         templates_dir=templates_dir,
         output_pdf=output_pdf,
@@ -239,10 +302,10 @@ def generate_all_pdfs(
         created_pdfs.append(output_pdf)
     else:
         errors.append(f"1. Program: {msg}")
-    report_progress("1. Program.pdf")
+    report_progress(output_pdf.name)
 
     # 2. Plan.pdf
-    output_pdf = output_dir / "2. Plan.pdf"
+    output_pdf = output_dir / doc_filename("2", filename_lang)
     success, msg = _compile_wrapper_typst(
         templates_dir=templates_dir,
         output_pdf=output_pdf,
@@ -260,10 +323,10 @@ def generate_all_pdfs(
         created_pdfs.append(output_pdf)
     else:
         errors.append(f"2. Plan: {msg}")
-    report_progress("2. Plan.pdf")
+    report_progress(output_pdf.name)
 
     # 3. Calendar.pdf
-    output_pdf = output_dir / "3. Calendar.pdf"
+    output_pdf = output_dir / doc_filename("3", filename_lang)
     success, msg = _compile_wrapper_typst(
         templates_dir=templates_dir,
         output_pdf=output_pdf,
@@ -281,14 +344,14 @@ def generate_all_pdfs(
         created_pdfs.append(output_pdf)
     else:
         errors.append(f"3. Calendar: {msg}")
-    report_progress("3. Calendar.pdf")
+    report_progress(output_pdf.name)
 
     # 4. Module.pdf - для каждой дисциплины
     for idx, row in disciplines.iterrows():
         code = row['discipline_code']
         var_cycle = row['index']
 
-        output_pdf = output_dir / f"4. {code}.pdf"
+        output_pdf = output_dir / item_filename("4", row)
         success, msg = _compile_wrapper_typst(
             templates_dir=templates_dir,
             output_pdf=output_pdf,
@@ -309,14 +372,14 @@ def generate_all_pdfs(
         else:
             errors.append(f"4. {code}: {msg}")
 
-        report_progress(f"4. {code}.pdf")
+        report_progress(output_pdf.name)
 
     # 5. Practice.pdf - для каждой практики
     for idx, row in practices.iterrows():
         code = row['discipline_code']
         var_cycle = row['index']
 
-        output_pdf = output_dir / f"5. {code}.pdf"
+        output_pdf = output_dir / item_filename("5", row)
         success, msg = _compile_wrapper_typst(
             templates_dir=templates_dir,
             output_pdf=output_pdf,
@@ -337,13 +400,13 @@ def generate_all_pdfs(
         else:
             errors.append(f"5. {code}: {msg}")
 
-        report_progress(f"5. {code}.pdf")
+        report_progress(output_pdf.name)
 
     # 6. Finals.pdf
     if len(finals) > 0:
         var_cycle = finals.iloc[0]['index']
 
-        output_pdf = output_dir / "6. Finals.pdf"
+        output_pdf = output_dir / doc_filename("6", filename_lang)
         success, msg = _compile_wrapper_typst(
             templates_dir=templates_dir,
             output_pdf=output_pdf,
@@ -365,7 +428,7 @@ def generate_all_pdfs(
         else:
             errors.append(f"6. Finals: {msg}")
 
-        report_progress("6. Finals.pdf")
+        report_progress(output_pdf.name)
 
     # 7. Assessment.pdf - для дисциплин и практик
     assessment_items = pd.concat([disciplines, practices], ignore_index=True)
@@ -374,7 +437,7 @@ def generate_all_pdfs(
         code = row['discipline_code']
         var_cycle = row['index']
 
-        output_pdf = output_dir / f"7. {code}.pdf"
+        output_pdf = output_dir / item_filename("7", row)
         success, msg = _compile_wrapper_typst(
             templates_dir=templates_dir,
             output_pdf=output_pdf,
@@ -395,10 +458,10 @@ def generate_all_pdfs(
         else:
             errors.append(f"7. {code}: {msg}")
 
-        report_progress(f"7. {code}.pdf")
+        report_progress(output_pdf.name)
 
     # 8a. Upbringing.pdf
-    output_pdf = output_dir / "8a. Upbringing.pdf"
+    output_pdf = output_dir / doc_filename("8a", filename_lang)
     success, msg = _compile_wrapper_typst(
         templates_dir=templates_dir,
         output_pdf=output_pdf,
@@ -416,10 +479,10 @@ def generate_all_pdfs(
         created_pdfs.append(output_pdf)
     else:
         errors.append(f"8a. Upbringing: {msg}")
-    report_progress("8a. Upbringing.pdf")
+    report_progress(output_pdf.name)
 
     # 8b. Cal_upbringing.pdf
-    output_pdf = output_dir / "8b. Cal_upbringing.pdf"
+    output_pdf = output_dir / doc_filename("8b", filename_lang)
     success, msg = _compile_wrapper_typst(
         templates_dir=templates_dir,
         output_pdf=output_pdf,
@@ -437,9 +500,22 @@ def generate_all_pdfs(
         created_pdfs.append(output_pdf)
     else:
         errors.append(f"8b. Cal_upbringing: {msg}")
-    report_progress("8b. Cal_upbringing.pdf")
+    report_progress(output_pdf.name)
 
     return created_pdfs, errors
+
+
+def _detect_doc_prefix(filename: str) -> str:
+    """Определяет номер документа по имени файла (с номером или без него)."""
+    stem = filename[:-4] if filename.endswith(".pdf") else filename
+    number, sep, rest = stem.partition(". ")
+    if sep and number in DOC_LABELS:
+        return number
+    for prefix, labels in DOC_LABELS.items():
+        for label in labels:
+            if stem == label or stem.startswith(label + " "):
+                return prefix
+    return stem
 
 
 def get_pdf_statistics(pdf_list: List[Path]) -> Dict[str, int]:
@@ -466,7 +542,7 @@ def get_pdf_statistics(pdf_list: List[Path]) -> Dict[str, int]:
 
     stats = {}
     for pdf in pdf_list:
-        prefix = pdf.name.split(".")[0]
+        prefix = _detect_doc_prefix(pdf.name)
         name = type_names.get(prefix, prefix)
         stats[name] = stats.get(name, 0) + 1
 

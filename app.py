@@ -427,6 +427,31 @@ if st.session_state.merged is not None:
                     value=2026,
                     help="Год, указываемый на титульных страницах: «Москва, 2026»"
                 )
+                name_col, lang_col, num_col = st.columns(3)
+                with name_col:
+                    name_by = st.radio(
+                        "Имена файлов РПД и ФОС",
+                        options=["code", "name"],
+                        format_func={"code": "По индексу", "name": "По названию дисциплины"}.get,
+                        horizontal=True,
+                        help="Пример: «4. РПД Б1.О.01.pdf» или «4. РПД История России.pdf»"
+                    )
+                with lang_col:
+                    filename_lang = st.radio(
+                        "Язык названий файлов",
+                        options=["en", "ru"],
+                        format_func={"en": "Английский", "ru": "Русский"}.get,
+                        horizontal=True,
+                        help="Пример: «1. Program.pdf», «7. Assessment …» или «1. ОПОП.pdf», «7. ФОС …»"
+                    )
+                with num_col:
+                    with_number = st.radio(
+                        "Номер в названии файла",
+                        options=[True, False],
+                        format_func={True: "С номером", False: "Без номера"}.get,
+                        horizontal=True,
+                        help="Пример: «4. РПД Б1.О.01.pdf» или «РПД Б1.О.01.pdf»"
+                    )
 
                 if st.button("🚀 Генерировать PDF", type="primary"):
                     # Создаём временную директорию для PDF
@@ -461,6 +486,9 @@ if st.session_state.merged is not None:
                                 is_accredited=is_accredited,
                                 is_new_edition=is_new_edition,
                                 doc_year=int(doc_year),
+                                name_by=name_by,
+                                filename_lang=filename_lang,
+                                with_number=with_number,
                             )
 
                         progress_bar.progress(1.0)
