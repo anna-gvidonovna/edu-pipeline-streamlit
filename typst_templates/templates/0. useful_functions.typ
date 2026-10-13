@@ -13,7 +13,7 @@
 #let edu_protocol_number = title_csv.at(title_n).at("edu_protocol_number")
 #let edu_protocol_date = title_csv.at(title_n).at("edu_protocol_date")
 #let qualification = title_csv.at(title_n).at("qualification")
-#let level = if qualification == "магистр" [высшее образование — магистратура] else [высшее образование — бакалавриат]
+#let level = if lower(qualification.trim()) == "магистр" [высшее образование — магистратура] else [высшее образование — бакалавриат]
 #let start_year = title_csv.at(title_n).at("start_year")
 #let form_of_study = title_csv.at(title_n).at("form_of_study")
 #let fgos_number = title_csv.at(title_n).at("fgos_number")
